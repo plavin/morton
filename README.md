@@ -1,5 +1,5 @@
 # Morton
-This is a prototype of code that will be put into Spatter. It produces a [morton- or (z-) ordering](https://en.wikipedia.org/wiki/Z-order_curve), even for non-power-of-two sizes. For such sizes, it will simply use the next power-of-two curve, but skip points which would lie outside the domain. 
+This is a prototype of code that will be put into [Spatter](github.com/plavin/spatter). It produces a [morton- or (z-) ordering](https://en.wikipedia.org/wiki/Z-order_curve), even for non-power-of-two sizes. For such sizes, it will simply use the next power-of-two curve, but skip points which would lie outside the domain. 
 
 ## Driver Usage
 We provide a main function for testing the code, in main.c. You can compile it with `make`. This will produce an executable called `morton`. There are two required arguments, the number of dimensions (2 or 3) and the length of each dimension. 
