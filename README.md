@@ -15,3 +15,5 @@ As the indices will be mixed into a single 64-bit variable (`uint64_t`), the ind
 
 Due to the above restriction, the largest number of bits needed to store an index is 32. Thus the list returned from `z_order_*` has type `uint32_t*`.
 
+## Future Improvements
+If you know how to parallelize the loops in `z_order_2d` and `z_order_3d` please let me know! The if statement that checks if a point lies outside the domain currently makes the loop sequential. 
