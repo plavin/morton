@@ -1,12 +1,15 @@
 // Author: Patrick Lavin
-// This code prints a 2d morton ordering
+// This code prints a 2d or 3d morton ordering
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <assert.h>
 
+#define VERBOSE 0
+
 // Taken from https://stackoverflow.com/a/30562230
-uint32_t even_bits(uint64_t x)
+uint64_t even_bits(uint64_t x)
 {
     x = x & 0x5555555555555555;
     x = (x | (x >> 1))  & 0x3333333333333333;
@@ -14,101 +17,131 @@ uint32_t even_bits(uint64_t x)
     x = (x | (x >> 4))  & 0x00FF00FF00FF00FF;
     x = (x | (x >> 8))  & 0x0000FFFF0000FFFF;
     x = (x | (x >> 16)) & 0x00000000FFFFFFFF;
-    return (uint32_t)x;
+    return (uint64_t)x;
 }
 
-// Taken from https://stackoverflow.com/a/30562230
-void d2xy_morton(uint64_t d, uint32_t *x, uint32_t *y)
+void unpack_2d(uint64_t d, uint64_t *x, uint64_t *y)
 {
     *x = even_bits(d);
     *y = even_bits(d >> 1);
 }
 
-// TODO: Make everything 64 bits, manually check that dim fits
-uint64_t morton3(uint64_t x) {
+void z_order_2d(uint64_t dim, uint32_t *list)
+{
+    uint64_t i, x, y, idx = 0, extra = 0;
+
+    for (i = 0; i < dim * dim + extra; i++) {
+        unpack_2d(i, &y, &x);
+        if (x >= dim || y >= dim) {
+            extra++;
+            continue;
+        }
+        list[idx++] = (uint32_t)(x*dim + y);
+
+        #if VERBOSE
+            printf("(%lu,%lu) -> %lu\n", x, y, ((uint64_t)x)*dim + y);
+        #endif
+
+    }
+}
+
+
+// Taken from https://stackoverflow.com/a/28358035
+uint64_t third_bits(uint64_t x) {
     x = x & 0x9249249249249249;
-    x = (x | (x >> 2))  & 0x30c30c30c30c30c3;
-    x = (x | (x >> 4))  & 0xf00f00f00f00f00f;
-    x = (x | (x >> 8))  & 0x00ff0000ff0000ff;
-    x = (x | (x >> 16)) & 0xffff00000000ffff;
-    x = (x | (x >> 32)) & 0x00000000ffffffff;
+    x = (x | (x >> 2))  & 0x30C30C30C30C30C3;
+    x = (x | (x >> 4))  & 0xF00F00F00F00F00F;
+    x = (x | (x >> 8))  & 0x00FF0000FF0000FF;
+    x = (x | (x >> 16)) & 0xFFFF00000000FFFF;
+    x = (x | (x >> 32)) & 0x00000000FFFFFFFF;
     return x;
 }
-/*
-uint64_t bits;
-uint64_t x = morton3(bits)
-uint64_t y = morton3(bits>>1)
-uint64_t z = morton3(bits>>2)
-*/
 
-void z_ordering_2d(uint32_t dim)
+void unpack_3d(uint64_t d, uint64_t *x, uint64_t *y, uint64_t *z)
 {
-    uint32_t x, y, extra = 0;
-    uint64_t i;
+    *x = third_bits(d);
+    *y = third_bits(d>>1);
+    *z = third_bits(d>>2);
+}
 
-    for (i = 0; i < dim * dim + extra; i++) {
-        d2xy_morton(i, &y, &x);
-        if (x >= dim || y >= dim) {
+void z_order_3d(uint64_t dim, uint32_t *list)
+{
+    uint64_t i, x, y, z, idx = 0, extra = 0;
+
+    for (i = 0; i < dim * dim * dim + extra; i++) {
+        unpack_3d(i, &z, &y, &x);
+        if (x >= dim || y >= dim || z >= dim) {
             extra++;
             continue;
         }
-        printf("(%u,%u) -> %lu\n", x, y, ((uint64_t)x)*dim + y);
+        list[idx++] = (uint32_t)(x*dim*dim + y*dim + z);
+
+        #if VERBOSE
+            printf("(%lu,%lu,%lu) -> %lu\n", x, y, z, x*dim*dim + y*dim + z);
+        #endif
     }
 }
 
-void z_order_list(uint32_t dim, uint64_t *list)
+uint64_t next_pow2(uint64_t x)
 {
-    uint32_t x, y, idx = 0, extra = 0;
-    uint64_t i;
-
-    for (i = 0; i < dim * dim + extra; i++) {
-        d2xy_morton(i, &y, &x);
-        if (x >= dim || y >= dim) {
-            extra++;
-            continue;
-        }
-        list[idx++] = ((uint64_t)x)*dim + y;
-    }
+    uint64_t n = 0, xx = x;
+    while (xx >>= 1) n++;
+    if (1 << n != x) n++;
+    return n;
 }
 
 int main (int argc, char **argv)
 {
-    uint64_t dim_l;
-    uint32_t dim;
+    uint64_t dim, len, np2;
+    uint32_t *list = NULL;
 
-    // Check args
-    if (argc != 2) {
-        printf("Usage: %s <dim>\n", argv[0]);
+    if (argc != 3) {
+        printf("Usage: %s <2/3> <len>\n", argv[0]);
         exit(1);
     }
 
-    dim_l = strtoul (argv[1], NULL, 0);
-    dim = (uint32_t) dim_l;
+    dim = strtoul (argv[1], NULL, 0);
+    len = strtoul (argv[2], NULL, 0);
+    np2 = next_pow2(len);
 
-    if (dim_l > dim) {
-        printf("Error: Dimension is too big to be represented by 32 bits\n");
+    if (dim != 2 && dim != 3) {
+        printf("Error: number of dimensions must be 2 or 3\n");
         exit(1);
     }
 
-    if (dim == 0) {
-        printf("Error: Dimension must be positive\n");
+    if (len == 0) {
+        printf("Error: dimension must be positive\n");
     }
 
-    // Print ordering as x, y pairs
-    printf("The grid size is: (%u,%u)\n", dim, dim);
-    z_ordering_2d(dim);
-
-    // Get ordering as indices into 1d array of size dim x dim
-    uint64_t *list = (uint64_t*) malloc (sizeof(uint64_t) * dim * dim);
-    assert(list);
-    z_order_list(dim, list);
-
-    // Print list
-    for (int i = 0; i < dim*dim; i++) {
-        printf("%lu ", list[i]);
+    if ( (dim == 2 && np2 > 32) || (dim == 3 && np2 > 21) ) {
+        printf("The dimension is too big to be mixed\n");
+        exit(1);
     }
-    printf("\n");
 
-    free(list);
 
+    if (dim == 2) {
+        printf("The grid size is: (%lu,%lu)\n", len, len);
+
+        list = (uint32_t*) malloc (sizeof(uint32_t) * len * len);
+        assert(list);
+        z_order_2d(len, list);
+
+        for (int i = 0; i < len*len; i++) {
+            printf("%u ", list[i]);
+        }
+        printf("\n");
+    } else {
+        printf("The grid size is: (%lu,%lu,%lu)\n", len, len,len);
+
+        list = (uint32_t*) malloc (sizeof(uint32_t) * len * len * len);
+        assert(list);
+        z_order_3d(len, list);
+
+        for (int i = 0; i < len*len*len; i++) {
+            printf("%u ", list[i]);
+        }
+        printf("\n");
+    }
+
+    if (list) free(list);
 }
