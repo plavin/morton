@@ -3,12 +3,16 @@
 //
 // This code returns a 2d or 3d morton ordering
 
+
+#define MORTON_VERBOSE 1
+#define MORTON_DEBUG 0
+
+#ifdef MORTON_VERBOSE
 #include <stdio.h>
+#endif
 #include <stdlib.h>
 #include <stdint.h>
 #include "morton.h"
-
-#define VERBOSE 0
 
 uint64_t next_pow2(uint64_t x)
 {
@@ -42,19 +46,25 @@ uint32_t *z_order_2d(uint64_t dim)
     uint32_t* list = NULL;
 
     if (dim == 0) {
+#if MORTON_VERBOSE
         printf("Error: dim must be positive\n");
+#endif
         return NULL;
     }
 
     if (next_pow2(dim) > 32) {
+#if MORTON_VERBOSE
         printf("Error: The dimension is too big to be mixed in 2d\n");
+#endif
         return NULL;
     }
 
     list = (uint32_t*)malloc(sizeof(uint32_t) * dim * dim);
 
     if (!list) {
+#if MORTON_VERBOSE
         printf("Failed to allocate space for the ordering\n");
+#endif
         return NULL;
     }
 
@@ -66,7 +76,7 @@ uint32_t *z_order_2d(uint64_t dim)
         }
         list[idx++] = (uint32_t)(x*dim + y);
 
-        #if VERBOSE
+        #if MORTON_DEBUG
             printf("(%lu,%lu) -> %lu\n", x, y, ((uint64_t)x)*dim + y);
         #endif
 
@@ -100,19 +110,25 @@ uint32_t *z_order_3d(uint64_t dim)
     uint32_t *list = NULL;
 
     if (dim == 0) {
+#if MORTON_VERBOSE
         printf("Error: dim must be positive\n");
+#endif
         return NULL;
     }
 
     if (next_pow2(dim) > 21) {
+#if MORTON_VERBOSE
         printf("Error: The dimension is too big to be mixed in 3d\n");
+#endif
         return NULL;
     }
 
     list = (uint32_t*)malloc(sizeof(uint32_t) * dim * dim * dim);
 
     if (!list) {
+#if MORTON_VERBOSE
         printf("Failed to allocate space for the ordering\n");
+#endif
         return NULL;
     }
 
@@ -124,7 +140,7 @@ uint32_t *z_order_3d(uint64_t dim)
         }
         list[idx++] = (uint32_t)(x*dim*dim + y*dim + z);
 
-        #if VERBOSE
+        #if MORTON_DEBUG
             printf("(%lu,%lu,%lu) -> %lu\n", x, y, z, x*dim*dim + y*dim + z);
         #endif
     }
