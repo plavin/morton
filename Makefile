@@ -1,2 +1,2 @@
-all: main.c
-	gcc -o morton main.c -O3
+all: main.c morton.c
+	gcc -o morton main.c morton.c -O3
