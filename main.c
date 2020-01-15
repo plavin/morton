@@ -1,4 +1,6 @@
 // Author: Patrick Lavin
+// Date:   14 January 2020
+//
 // This code prints a 2d or 3d morton ordering
 
 #include <stdio.h>
