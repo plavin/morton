@@ -111,7 +111,6 @@ uint32_t *_z_order_2d(uint64_t dim)
 
 uint32_t *z_order_2d(uint64_t dim, uint64_t block)
 {
-    //uint64_t i, x, y, idx = 0, extra = 0;
     uint32_t* list = NULL;
 
     if (dim == 0) {
@@ -166,24 +165,50 @@ void unpack_3d(uint64_t d, uint64_t *x, uint64_t *y, uint64_t *z)
     *z = third_bits(d>>2);
 }
 
-uint32_t *z_order_3d(uint64_t dim, uint64_t block)
+uint32_t *get_cube(uint64_t dim, uint64_t block)
+{
+    uint32_t *cube = (uint32_t*)malloc(sizeof(uint32_t) * block * block * block);
+    for (int i = 0; i < block; i++) {
+        for (int j = 0; j < block; j++) {
+            for (int k = 0; k < block; k++) {
+                cube[i*block*block + j*block + k] = i*dim*dim + j*dim + k;
+            }
+        }
+    }
+    return cube;
+};
+
+uint32_t *_z_block_3d(uint32_t* old_list, uint64_t dim, uint64_t block) {
+
+    uint64_t i, x, y, z, idx = 0, extra = 0;
+    uint32_t* list = NULL;
+    uint32_t* cube = NULL;
+
+    list = (uint32_t*)malloc(sizeof(uint32_t) * dim * dim * dim);
+
+    cube = get_cube(dim, block);
+
+    for (i = 0; i < (dim/block)*(dim/block)*(dim/block); i++) {
+        int x = old_list[i] % (dim/block);
+        int y = old_list[i] / (dim/block) % (dim/block);
+        int z = old_list[i] / (dim/block) / (dim/block);
+        int base = x * block + y * dim * block + z * dim * dim * block;
+        //int base = old_list[i] * (block * block);
+        int off  = i * (block * block * block);
+        for (int j = 0; j < block*block*block; j++) {
+            list[off+j] = base + cube[j];
+        }
+    }
+
+    free(cube);
+    free(old_list);
+    return list;
+}
+
+uint32_t *_z_order_3d(uint64_t dim)
 {
     uint64_t i, x, y, z, idx = 0, extra = 0;
     uint32_t *list = NULL;
-
-    if (dim == 0) {
-#if MORTON_VERBOSE
-        printf("Error: dim must be positive\n");
-#endif
-        return NULL;
-    }
-
-    if (next_pow2(dim) > 21) {
-#if MORTON_VERBOSE
-        printf("Error: The dimension is too big to be mixed in 3d\n");
-#endif
-        return NULL;
-    }
 
     list = (uint32_t*)malloc(sizeof(uint32_t) * dim * dim * dim);
 
@@ -206,6 +231,46 @@ uint32_t *z_order_3d(uint64_t dim, uint64_t block)
             printf("(%lu,%lu,%lu) -> %lu\n", x, y, z, x*dim*dim + y*dim + z);
         #endif
     }
+
+    return list;
+
+}
+
+uint32_t *z_order_3d(uint64_t dim, uint64_t block)
+{
+    uint64_t i, x, y, z, idx = 0, extra = 0;
+    uint32_t *list = NULL;
+
+    if (dim == 0) {
+#if MORTON_VERBOSE
+        printf("Error: dim must be positive\n");
+#endif
+        return NULL;
+    }
+
+    if (next_pow2(dim) > 21) {
+#if MORTON_VERBOSE
+        printf("Error: The dimension is too big to be mixed in 3d\n");
+#endif
+        return NULL;
+    }
+
+    if (block <= 0) {
+#if MORTON_VERBOSE
+        printf("Error: The block size must be positive\n");
+#endif
+        return NULL;
+    }
+
+    if ((dim/block)*block != dim) {
+#if MORTON_VERBOSE
+        printf("Error: The block size must divide the dimension length\n");
+#endif
+        return NULL;
+    }
+
+    list = _z_order_3d(dim/block);
+    if(block>1) list = _z_block_3d(list, dim, block);
 
     return list;
 }
