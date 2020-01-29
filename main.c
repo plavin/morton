@@ -17,7 +17,7 @@ int main (int argc, char **argv)
         printf("Usage: %s <2/3> <len> [block]\n", argv[0]);
         printf("1st arg: 2D or 3D pattern\n");
         printf("2nd arg: length of one dimension\n");
-        printf("3rd arg: block size (block size must divide length) [OPTIONAL]\n");
+        printf("3rd arg: block size (block size must divide length) [default: 1, no blocking]\n");
         exit(1);
     }
 

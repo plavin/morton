@@ -14,6 +14,7 @@
 #include <stdint.h>
 #include "morton.h"
 
+// Return the smallest power of 2 greater than or equal to `x`
 uint64_t next_pow2(uint64_t x)
 {
     uint64_t n = 0, xx = x;
@@ -22,6 +23,7 @@ uint64_t next_pow2(uint64_t x)
     return n;
 }
 
+// Return the even bits of `x`, packed into the low 32 bits
 // Taken from https://stackoverflow.com/a/30562230
 uint64_t even_bits(uint64_t x)
 {
@@ -34,6 +36,7 @@ uint64_t even_bits(uint64_t x)
     return (uint64_t)x;
 }
 
+// Translate the morton coordinate d into a 2d x and y coordinate
 void unpack_2d(uint64_t d, uint64_t *x, uint64_t *y)
 {
     *x = even_bits(d);
@@ -168,6 +171,14 @@ void unpack_3d(uint64_t d, uint64_t *x, uint64_t *y, uint64_t *z)
 uint32_t *get_cube(uint64_t dim, uint64_t block)
 {
     uint32_t *cube = (uint32_t*)malloc(sizeof(uint32_t) * block * block * block);
+
+    if (!cube) {
+#if MORTON_VERBOSE
+        printf("Failed to allocate space for the cube pattern\n");
+#endif
+        return NULL;
+    }
+
     for (int i = 0; i < block; i++) {
         for (int j = 0; j < block; j++) {
             for (int k = 0; k < block; k++) {
@@ -185,6 +196,13 @@ uint32_t *_z_block_3d(uint32_t* old_list, uint64_t dim, uint64_t block) {
     uint32_t* cube = NULL;
 
     list = (uint32_t*)malloc(sizeof(uint32_t) * dim * dim * dim);
+
+    if (!list) {
+#if MORTON_VERBOSE
+        printf("Failed to allocate space for the ordering\n");
+#endif
+        return NULL;
+    }
 
     cube = get_cube(dim, block);
 
@@ -238,7 +256,6 @@ uint32_t *_z_order_3d(uint64_t dim)
 
 uint32_t *z_order_3d(uint64_t dim, uint64_t block)
 {
-    uint64_t i, x, y, z, idx = 0, extra = 0;
     uint32_t *list = NULL;
 
     if (dim == 0) {
