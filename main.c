@@ -10,11 +10,14 @@
 
 int main (int argc, char **argv)
 {
-    uint64_t dim, len;
+    uint64_t dim, len, block = 1;
     uint32_t *list = NULL;
 
-    if (argc != 3) {
-        printf("Usage: %s <2/3> <len>\n", argv[0]);
+    if (argc < 3) {
+        printf("Usage: %s <2/3> <len> [block]\n", argv[0]);
+        printf("1st arg: 2D or 3D pattern\n");
+        printf("2nd arg: length of one dimension\n");
+        printf("3rd arg: block size (block size must divide length) [OPTIONAL]\n");
         exit(1);
     }
 
@@ -26,10 +29,15 @@ int main (int argc, char **argv)
         exit(1);
     }
 
+    if (argc > 3) {
+        block = strtoul(argv[3], NULL, 0);
+    }
+
+
     if (dim == 2) {
         printf("The grid size is: (%lu,%lu)\n", len, len);
 
-        list = z_order_2d(len);
+        list = z_order_2d(len, block);
 
         if (!list) {
             printf("Call to z_order failed\n");
@@ -43,7 +51,7 @@ int main (int argc, char **argv)
     } else {
         printf("The grid size is: (%lu,%lu,%lu)\n", len, len,len);
 
-        list = z_order_3d(len);
+        list = z_order_3d(len, block);
 
         if (!list) {
             printf("Call to z_order failed\n");
